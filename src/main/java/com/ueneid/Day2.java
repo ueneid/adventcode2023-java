@@ -1,81 +1,73 @@
 package com.ueneid;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class Day2 {
     private final List<String> input;
 
     enum Cube {
-        RED(12, "red"), GREEN(13, "green"), BLUE(14, "blue");
+        RED(12), GREEN(13), BLUE(14);
 
-        int count;
-        String name;
+        final int maxLimit;
 
-        Cube(int count, String name) {
-            this.count = count;
-        }
-
-        int getMaxLimit() {
-            return switch (this) {
-                case RED -> 12;
-                case GREEN -> 13;
-                case BLUE -> 14;
-            };
+        Cube(int maxLimit) {
+            this.maxLimit = maxLimit;
         }
     }
 
     static class GameSet {
-        public static GameSet parse(String[] sets) {
-            var gameSet = new GameSet();
-            for (int i = 0; i < sets.length; i++) {
-                var setList = sets[i].split(" ");
-                var cube = switch (setList[1]) {
-                    case "red" -> Cube.RED;
-                    case "green" -> Cube.GREEN;
-                    case "blue" -> Cube.BLUE;
-                    default -> throw new IllegalStateException("Unexpected value: " + setList[0]);
-                };
-                gameSet.record.put(cube, Integer.parseInt(setList[0]));
-            }
-            return gameSet;
+        private final Map<Cube, Integer> cubeCounts;
+
+        private GameSet(Map<Cube, Integer> cubeCounts) {
+            this.cubeCounts = cubeCounts;
         }
 
-        Map<Cube, Integer> record = new HashMap<>();
+        public static GameSet parse(String setString) {
+            Map<Cube, Integer> cubeCounts = Arrays.stream(setString.split(", *"))
+                                                  .map(s -> s.split(" +"))
+                                                  .collect(Collectors.toMap(
+                                                          s -> Cube.valueOf(s[1].toUpperCase()),
+                                                          s -> Integer.parseInt(s[0])
+                                                  ));
+            return new GameSet(cubeCounts);
+        }
 
         public boolean isPossible() {
-            return this.record.entrySet().stream().allMatch(
-                    cubeIntegerEntry -> cubeIntegerEntry.getKey().getMaxLimit() >= cubeIntegerEntry.getValue());
+            return cubeCounts.entrySet().stream()
+                             .allMatch(e -> e.getKey().maxLimit >= e.getValue());
         }
     }
 
     static class Game {
-        Integer id;
-        List<GameSet> gameSetList;
+        private final int id;
+        private final List<GameSet> gameSetList;
 
-        static Pattern pat = Pattern.compile("^Game (\\d+): (.+)$");
-
-        public static Game parse(String str) {
-            var m = pat.matcher(str);
-            if (m.matches()) {
-                var id = m.group(1);
-                var gameSetList = Arrays.stream(m.group(2).split("; *")).map(
-                        gameSet -> GameSet.parse(gameSet.split(", *"))).toList();
-                return new Game(Integer.valueOf(id), gameSetList);
-            }
-            return null;
-        }
-
-        public Game(Integer id, List<GameSet> gameSetList) {
+        private Game(int id, List<GameSet> gameSetList) {
             this.id = id;
             this.gameSetList = gameSetList;
         }
 
+        public static Game parse(String gameString) {
+            String[] parts = gameString.split(": ", 2);
+            if (parts.length < 2) {
+                throw new IllegalArgumentException("Invalid game string: " + gameString);
+            }
+            int id = Integer.parseInt(parts[0].substring(5));
+            List<GameSet> gameSetList = Arrays.stream(parts[1].split("; *"))
+                                              .map(GameSet::parse)
+                                              .toList();
+            return new Game(id, gameSetList);
+        }
+
         public boolean isPossibleGame() {
-            return this.gameSetList.stream().allMatch(gameSet -> gameSet.isPossible());
+            return gameSetList.stream().allMatch(GameSet::isPossible);
+        }
+
+        public int getId() {
+            return id;
         }
     }
 
@@ -84,8 +76,11 @@ public class Day2 {
     }
 
     public int part1() {
-        var gameList = input.stream().map((line -> Game.parse(line))).toList();
-        return gameList.stream().filter(game -> game.isPossibleGame()).mapToInt(game -> game.id).sum();
+        return input.stream()
+                    .map(Game::parse)
+                    .filter(Game::isPossibleGame)
+                    .mapToInt(Game::getId)
+                    .sum();
     }
 
     public int part2() {

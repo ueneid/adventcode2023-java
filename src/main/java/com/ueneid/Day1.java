@@ -17,6 +17,14 @@ public class Day1 {
                     .sum();
     }
 
+    public int part2() {
+        return input.stream()
+                    .map(this::replaceWordWithNumber)
+                    .map(this::extractFirstAndLastDigit)
+                    .mapToInt(Integer::valueOf)
+                    .sum();
+    }
+
     private int extractFirstAndLastDigit(String str) {
         String numbers = str.chars()
                             .filter(Character::isDigit)
@@ -26,9 +34,25 @@ public class Day1 {
         return Integer.parseInt("" + numbers.charAt(0) + numbers.charAt(numbers.length() - 1));
     }
 
+    private String replaceWordWithNumber(String str) {
+        return str
+                .replaceAll("one", "o1e")
+                .replaceAll("two", "t2o")
+                .replaceAll("three", "th3ee")
+                .replaceAll("four", "fo4r")
+                .replaceAll("five", "fi5e")
+                .replaceAll("six", "s6x")
+                .replaceAll("seven", "se7en")
+                .replaceAll("eight", "ei8ht")
+                .replaceAll("nine", "ni9e");
+    }
+
     public static void main(String[] args) {
         var input = Resource.resourceAsListOfString("input/day1/input.txt");
-        var answer1 = new Day1(input).part1();
+        var obj = new Day1(input);
+        var answer1 = obj.part1();
         System.out.println(answer1);
+        var answer2 = obj.part2();
+        System.out.println(answer2);
     }
 }

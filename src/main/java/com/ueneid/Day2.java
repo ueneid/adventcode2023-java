@@ -1,6 +1,7 @@
 package com.ueneid;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -66,6 +67,20 @@ public class Day2 {
             return gameSetList.stream().allMatch(GameSet::isPossible);
         }
 
+        public Map<Cube, Integer> getMaxCubes() {
+            return gameSetList.stream()
+                              .map(gameSet -> gameSet.cubeCounts)
+                              .reduce(new HashMap<>(), (maxCounts, currentCounts) -> {
+                                  currentCounts.forEach(
+                                          (cube, count) -> maxCounts.merge(cube, count, Integer::max));
+                                  return maxCounts;
+                              }, (map1, map2) -> { // このコンバイン関数はパラレルストリームでは必要ですが、今回は使用されません
+                                  map2.forEach((cube, count) -> map1.merge(cube, count, Integer::max));
+                                  return map1;
+                              });
+
+        }
+
         public int getId() {
             return id;
         }
@@ -84,7 +99,13 @@ public class Day2 {
     }
 
     public int part2() {
-        return 1;
+        return input.stream()
+                    .map(Game::parse)
+                    .map(Game::getMaxCubes)
+                    .mapToInt(gameSet -> gameSet.values().stream()
+                                                .mapToInt(Integer::intValue)
+                                                .reduce(1, (a, b) -> a * b))
+                    .sum();
     }
 
     public static void main(String[] args) {
@@ -92,7 +113,7 @@ public class Day2 {
         var obj = new Day2(input);
         var answer1 = obj.part1();
         System.out.println(answer1);
-//        var answer2 = obj.part2();
-//        System.out.println(answer2);
+        var answer2 = obj.part2();
+        System.out.println(answer2);
     }
 }
